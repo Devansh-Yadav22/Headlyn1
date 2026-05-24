@@ -373,7 +373,7 @@ function App() {
             {theme === "dark" ? "☀" : "🌙"}
           </button>
           <button className="icon-button hover-lift" onMouseMove={handleGlowMove} onClick={() => setCompact((value) => !value)} aria-label="Toggle compact layout">
-            {compact ? "Grid" : "List"}
+            {compact ? "⊞" : "☰"}
           </button>
         </div>
       </nav>

@@ -638,7 +638,6 @@ button {
 }
 
 @media (max-width: 980px) {
-  .topbar,
   .hero-section {
     grid-template-columns: 1fr;
   }
@@ -658,6 +657,64 @@ button {
     top: 8px;
     margin-inline: 10px;
     transform: translateY(8px);
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 20px;
+  }
+
+  .topbar.scrolled {
+    padding: 8px 12px;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .brand {
+    min-height: 42px;
+    padding: 4px;
+    border-radius: 12px;
+    gap: 0;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+  }
+
+  .brand span:not(.brand-mark) {
+    display: none;
+  }
+
+  .search-wrap {
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+
+  .search-wrap span {
+    display: none;
+  }
+
+  .search-wrap input {
+    font-size: 0.92rem;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .theme-toggle-btn,
+  .icon-button {
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+    border-radius: 12px;
+    font-size: 1.15rem;
+    padding: 0;
+    display: grid;
+    place-items: center;
   }
 
   .hero-section {
