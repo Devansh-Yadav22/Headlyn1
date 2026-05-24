@@ -28,6 +28,10 @@ app.use(cors({
   }
 }));
 
+app.get("/", (req, res) => {
+  res.json({ message: "Headlyn News API is online!" });
+});
+
 app.get("/news", async (req, res) => {
   try {
     const country = req.query.country || "us";
