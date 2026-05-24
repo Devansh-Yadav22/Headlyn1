@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://headlyn.vercel.app/sitemap.xml
