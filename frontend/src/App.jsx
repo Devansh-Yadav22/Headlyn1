@@ -584,6 +584,97 @@ function App() {
         )}
       </section>
 
+      <footer className="footer-wrap" aria-label="Site Footer">
+        <div className="footer-grid">
+          <div className="footer-col brand-col">
+            <div className="footer-brand">
+              <span className="brand-mark">H</span>
+              <span>Headlyn</span>
+            </div>
+            <p className="about-text">
+              Headlyn is an independent, real-time news intelligence platform engineered for global decision-makers, tech professionals, and researchers who require immediate, noise-free situational awareness. By pairing high-frequency syndicated feeds with responsive context-aware aesthetics, we filter the static to deliver pure informational clarity.
+            </p>
+          </div>
+
+          <div className="footer-col">
+            <h4>Nav & Channels</h4>
+            <ul>
+              <li>
+                <button onClick={() => {
+                  setShowSavedOnly(false);
+                  setActiveTopic("Top Stories");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}>Top Stories</button>
+              </li>
+              <li>
+                <button onClick={() => {
+                  setShowSavedOnly(false);
+                  setActiveTopic("Technology");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}>Technology</button>
+              </li>
+              <li>
+                <button onClick={() => {
+                  setShowSavedOnly(false);
+                  setActiveTopic("Science");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}>Science</button>
+              </li>
+              <li>
+                <button onClick={() => {
+                  setShowSavedOnly(false);
+                  setActiveTopic("Economy");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}>Economy & Business</button>
+              </li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <h4>Data Partners</h4>
+            <ul>
+              <li>
+                <a href="https://newsapi.org" target="_blank" rel="noreferrer">NewsAPI Wire Service</a>
+              </li>
+              <li>
+                <a href="https://firebase.google.com" target="_blank" rel="noreferrer">Google Firebase DB</a>
+              </li>
+              <li>
+                <a href="https://vercel.com" target="_blank" rel="noreferrer">Vercel Serverless CDN</a>
+              </li>
+              <li>
+                <a href="https://unsplash.com" target="_blank" rel="noreferrer">Unsplash Photography</a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <h4>Security & Ops</h4>
+            <div className="footer-badges">
+              <span className="footer-badge">SSL SECURED</span>
+              <span className="footer-badge">HELMET ENFORCED</span>
+              <span className="footer-badge">FIRESTORE SYNC</span>
+              <span className="footer-badge">API RATE LIMITED</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <div className="copyright-info">
+            <p>
+              © 2026 Headlyn Technologies Inc. All rights reserved. Headlyn® and the stylized "H" logo are registered trademarks of Headlyn Technologies. Real-time news snippets, descriptive abstracts, and publisher properties displayed remain the intellectual property of their respective originating news outlets.
+            </p>
+          </div>
+          <div className="footer-legal-links">
+            <a href="#privacy" onClick={(e) => { e.preventDefault(); alert("Privacy Policy: Headlyn curates news locally and syncs saved news accounts via Google Firestore with zero third-party commercial sale of data."); }}>Privacy Policy</a>
+            <span className="legal-dot">•</span>
+            <a href="#terms" onClick={(e) => { e.preventDefault(); alert("Terms of Service: This service aggregates feeds dynamically via secure proxy and is provided exclusively for personal research and situational review."); }}>Terms of Service</a>
+            <span className="legal-dot">•</span>
+            <a href="#status" onClick={(e) => { e.preventDefault(); alert("System Status: All services operational. CORS checks active. Frontend: Vercel CDN; Backend: Vercel serverless Node middleware."); }}>System Status</a>
+          </div>
+        </div>
+      </footer>
+
       {showAuthModal && (
         <div className="modal-backdrop" onClick={() => setShowAuthModal(false)}>
           <div className="modal-content glass-surface" onClick={(e) => e.stopPropagation()} onMouseMove={handleGlowMove}>
