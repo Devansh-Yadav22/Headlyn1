@@ -2,11 +2,31 @@ import express from "express";
 import axios from "axios";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Secure backend headers using Helmet
+app.use(helmet());
+
+// Secure CORS configuration
+const allowedOrigins = [
+  "http://localhost:5173", // local Vite development
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow local development or server-to-server calls
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Blocked by CORS policy (Unauthorized Domain)"));
+    }
+  }
+}));
 
 app.get("/news", async (req, res) => {
   try {

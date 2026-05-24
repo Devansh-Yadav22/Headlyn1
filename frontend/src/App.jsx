@@ -23,96 +23,7 @@ const categoryThemes = {
   Culture: { accent: "#c084fc", glow: "#a855f7", ink: "#f3e8ff", apiCategory: "entertainment", country: "us" },
 };
 
-const seedArticles = [
-  {
-    id: "grid-ai-energy",
-    title: "Grid planners race to keep up with AI-era power demand",
-    dek: "Utilities are fast-tracking transmission upgrades as data centers, factories, and electric fleets compete for reliable capacity.",
-    source: "Signal Desk",
-    topic: "Technology",
-    region: "World",
-    minutes: 5,
-    trend: "+18%",
-    image: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "india-monsoon-cities",
-    title: "Indian cities prepare flood response rooms before monsoon peak",
-    dek: "Municipal teams are linking weather alerts, drainage maps, and emergency dispatch into shared dashboards.",
-    source: "Civic Wire",
-    topic: "India",
-    region: "India",
-    minutes: 4,
-    trend: "+9%",
-    image: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "markets-rate-watch",
-    title: "Markets drift as investors wait for the next inflation print",
-    dek: "Bond yields held steady while traders looked for signals on consumer demand, wages, and central-bank timing.",
-    source: "Market Loop",
-    topic: "Economy",
-    region: "US",
-    minutes: 3,
-    trend: "-2%",
-    image: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "ocean-heat-study",
-    title: "New ocean heat study sharpens forecasts for coastal risk",
-    dek: "Researchers say better measurements of upper-ocean warming could improve storm intensity projections.",
-    source: "Field Notes",
-    topic: "Science",
-    region: "World",
-    minutes: 6,
-    trend: "+12%",
-    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "streaming-local-sports",
-    title: "Streaming platforms court fans with local sports bundles",
-    dek: "New packages are designed around city loyalties, flexible pricing, and shorter highlight-first broadcasts.",
-    source: "Culture Beat",
-    topic: "Culture",
-    region: "US",
-    minutes: 4,
-    trend: "+6%",
-    image: "https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "chip-supply-map",
-    title: "Chip suppliers redraw factory maps around resilient logistics",
-    dek: "Executives are prioritizing ports, talent pools, and water security as much as incentives in new site searches.",
-    source: "Supply Brief",
-    topic: "Technology",
-    region: "World",
-    minutes: 7,
-    trend: "+15%",
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "health-clinics-ai",
-    title: "Clinics test AI note tools as doctors push for guardrails",
-    dek: "Pilot programs show time savings, but medical groups want clearer audits and patient disclosure standards.",
-    source: "Health Ledger",
-    topic: "Health",
-    region: "World",
-    minutes: 5,
-    trend: "+11%",
-    image: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "startup-credit",
-    title: "Startups turn to revenue financing as venture rounds take longer",
-    dek: "Founders are blending smaller equity raises with credit products tied to recurring revenue and customer invoices.",
-    source: "Founder Daily",
-    topic: "Economy",
-    region: "World",
-    minutes: 4,
-    trend: "+4%",
-    image: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80",
-  },
-];
+
 
 const normalizeArticle = (article, index, topic = "Top Stories") => ({
   id: article.id || article.url || `live-${index}`,
@@ -147,6 +58,10 @@ function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [theme, setTheme] = useState("dark");
+  const [scrolled, setScrolled] = useState(false);
+  const [loading, setLoading] = useState(false);
   const activeTheme = categoryThemes[activeTopic] || categoryThemes["Top Stories"];
 
   useEffect(() => {
@@ -155,7 +70,19 @@ function App() {
     return onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthMessage("");
+      if (currentUser) {
+        setShowAuthModal(false);
+      }
     });
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -193,6 +120,7 @@ function App() {
 
   useEffect(() => {
     let ignore = false;
+    setLoading(true);
     const params = new URLSearchParams({
       country: activeTheme.country,
       category: activeTheme.apiCategory,
@@ -224,6 +152,11 @@ function App() {
           setLiveArticles([]);
           setStatus("Curated edition");
         }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
       });
 
     return () => {
@@ -232,10 +165,70 @@ function App() {
   }, [activeTopic, activeTheme.apiCategory, activeTheme.country, activeTheme.q]);
 
   const articles = useMemo(
-    () => (liveArticles.length > 0 ? [...liveArticles, ...seedArticles] : seedArticles),
+    () => liveArticles,
     [liveArticles],
   );
-  const lead = articles[0];
+  const lead = articles[0] || {
+    id: "loading",
+    title: "Connecting to live feed...",
+    dek: "Please wait while we connect to secure news API systems and gather updates.",
+    source: "Headlyn Desk",
+    minutes: 3,
+    image: "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+  };
+
+  // Automatic Dynamic SEO Meta-Tag and Title Updates
+  useEffect(() => {
+    // 1. Dynamic Title based on Active Section and Queries
+    let seoTitle = "Headlyn";
+    if (query.trim()) {
+      seoTitle = `Search: "${query.trim()}" — Headlyn`;
+    } else if (activeTopic && activeTopic !== "Top Stories") {
+      seoTitle = `${activeTopic} — Headlyn`;
+    } else if (showSavedOnly) {
+      seoTitle = "Saved — Headlyn";
+    }
+    document.title = seoTitle;
+
+    // 2. Dynamic Curated Description
+    let descriptionText = "Get sharp, visually stunning, and highly curated news briefings across World, India, Technology, Economy, Science, and Culture on Headlyn.";
+    if (lead && lead.title && lead.id !== "loading") {
+      descriptionText = `Latest in ${activeTopic}: ${lead.title}. ${lead.dek}`;
+    }
+
+    // Helper utility to safely create/update meta attributes
+    const updateMetaTag = (name, value, isProperty = false) => {
+      const attribute = isProperty ? "property" : "name";
+      let tag = document.querySelector(`meta[${attribute}="${name}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute(attribute, name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", value);
+    };
+
+    updateMetaTag("description", descriptionText);
+    updateMetaTag("keywords", `news, aggregator, briefings, ${activeTopic.toLowerCase()}, custom feed, headlyn news, ${query.trim() ? query.trim() + ',' : ''} live updates`);
+
+    // 3. Open Graph Social Media Preview Attributes
+    updateMetaTag("og:title", seoTitle, true);
+    updateMetaTag("og:description", descriptionText, true);
+    if (lead && lead.image) {
+      updateMetaTag("og:image", lead.image, true);
+    }
+    updateMetaTag("og:type", "website", true);
+    updateMetaTag("og:url", window.location.href, true);
+
+    // 4. Set Canonical Link
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", window.location.origin + window.location.pathname);
+  }, [activeTopic, query, showSavedOnly, lead]);
 
   const filteredArticles = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -352,14 +345,14 @@ function App() {
 
   return (
     <main
-      className={compact ? "app compact" : "app"}
+      className={`${compact ? "app compact" : "app"} ${theme === "light" ? "light-theme" : ""}`}
       style={{
         "--theme-accent": activeTheme.accent,
         "--theme-glow": activeTheme.glow,
         "--theme-ink": activeTheme.ink,
       }}
     >
-      <nav className="topbar glass-surface" aria-label="Primary navigation" onMouseMove={handleGlowMove}>
+      <nav className={`topbar glass-surface ${scrolled ? "scrolled" : ""}`} aria-label="Primary navigation" onMouseMove={handleGlowMove}>
         <button className="brand hover-lift" onMouseMove={handleGlowMove} onClick={() => setActiveTopic("Top Stories")} aria-label="Go to top stories">
           <span className="brand-mark">H</span>
           <span>Headlyn</span>
@@ -375,35 +368,60 @@ function App() {
           />
         </div>
 
-        <button className="icon-button hover-lift" onMouseMove={handleGlowMove} onClick={() => setCompact((value) => !value)} aria-label="Toggle compact layout">
-          {compact ? "Grid" : "List"}
-        </button>
+        <div className="topbar-actions">
+          <button className="theme-toggle-btn hover-lift" onMouseMove={handleGlowMove} onClick={() => setTheme((theme) => (theme === "dark" ? "light" : "dark"))} aria-label="Toggle light and dark themes">
+            {theme === "dark" ? "☀" : "🌙"}
+          </button>
+          <button className="icon-button hover-lift" onMouseMove={handleGlowMove} onClick={() => setCompact((value) => !value)} aria-label="Toggle compact layout">
+            {compact ? "Grid" : "List"}
+          </button>
+        </div>
       </nav>
 
       <section className="hero-section">
-        <article className="lead-story glass-surface hover-lift" onMouseMove={handleGlowMove}>
-          <img src={lead.image} alt="" />
-          <div className="lead-copy">
-            <div className="eyebrow">
-              <span>{status}</span>
-              <span>{lead.source}</span>
+        {loading ? (
+          <article className="lead-story glass-surface skeleton-lead">
+            <div className="skeleton-lead-image skeleton-shimmer"></div>
+            <div className="lead-copy">
+              <div className="eyebrow">
+                <span className="skeleton-text skeleton-shimmer short"></span>
+                <span className="skeleton-text skeleton-shimmer short"></span>
+              </div>
+              <h1 className="skeleton-title skeleton-shimmer large"></h1>
+              <h1 className="skeleton-title skeleton-shimmer large medium"></h1>
+              <p className="skeleton-text skeleton-shimmer"></p>
+              <p className="skeleton-text skeleton-shimmer medium"></p>
+              <div className="lead-actions">
+                <span className="skeleton-btn skeleton-shimmer large"></span>
+                <span className="skeleton-btn skeleton-shimmer large"></span>
+              </div>
             </div>
-            <h1>{lead.title}</h1>
-            <p>{lead.dek}</p>
-            <div className="lead-actions">
-              <button className="hover-lift" onMouseMove={handleGlowMove} onClick={() => toggleSaved(lead)}>
-                {saved.has(lead.id) ? "Saved" : "Save lead"}
-              </button>
-              {lead.url ? (
-                <a className="hover-lift" onMouseMove={handleGlowMove} href={lead.url} target="_blank" rel="noreferrer">
-                  Open source
-                </a>
-              ) : (
-                <span>{lead.minutes} min briefing</span>
-              )}
+          </article>
+        ) : (
+          <article className="lead-story glass-surface hover-lift" onMouseMove={handleGlowMove}>
+            <img src={lead.image} alt="" />
+            <div className="lead-copy">
+              <div className="eyebrow">
+                <span>{status}</span>
+                <span>{lead.source}</span>
+              </div>
+              <h1>{lead.title}</h1>
+              <p>{lead.dek}</p>
+              <div className="lead-actions">
+                <button className="hover-lift" onMouseMove={handleGlowMove} onClick={() => toggleSaved(lead)}>
+                  {saved.has(lead.id) ? "Saved" : "Save lead"}
+                </button>
+                {lead.url ? (
+                  <a className="hover-lift" onMouseMove={handleGlowMove} href={lead.url} target="_blank" rel="noreferrer">
+                    Open source
+                  </a>
+                ) : (
+                  <span>{lead.minutes} min briefing</span>
+                )}
+              </div>
             </div>
-          </div>
-        </article>
+          </article>
+        )}
 
         <aside className="briefing-panel" aria-label="Morning briefing">
           <div className="auth-card glass-surface hover-lift" onMouseMove={handleGlowMove}>
@@ -415,42 +433,21 @@ function App() {
                 <button className="hover-lift" onMouseMove={handleGlowMove} onClick={handleSignOut}>Sign out</button>
               </>
             ) : (
-              <form onSubmit={handleAuthSubmit}>
-                <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
-                  <button
-                    type="button"
-                    className={authMode === "login" ? "active" : ""}
-                    onClick={() => setAuthMode("login")}
-                  >
-                    Login
-                  </button>
-                  <button
-                    type="button"
-                    className={authMode === "register" ? "active" : ""}
-                    onClick={() => setAuthMode("register")}
-                  >
-                    Register
-                  </button>
-                </div>
-                <input
-                  value={authEmail}
-                  onChange={(event) => setAuthEmail(event.target.value)}
-                  placeholder="Email"
-                  type="email"
-                  autoComplete="email"
-                />
-                <input
-                  value={authPassword}
-                  onChange={(event) => setAuthPassword(event.target.value)}
-                  placeholder="Password"
-                  type="password"
-                  autoComplete={authMode === "register" ? "new-password" : "current-password"}
-                />
-                <button type="submit" disabled={authBusy}>
-                  {authBusy ? "Working..." : authMode === "register" ? "Create account" : "Sign in"}
+              <>
+                <span className="panel-kicker">Account</span>
+                <strong>Personalize</strong>
+                <p>Sign in to sync your saved stories and custom feed.</p>
+                <button
+                  className="hover-lift auth-trigger-btn"
+                  onMouseMove={handleGlowMove}
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    setAuthMessage("");
+                  }}
+                >
+                  Sign In / Sign Up
                 </button>
-                <p>{firebaseReady ? authMessage || "Sign in to sync saved stories." : "Add Firebase env vars to enable login."}</p>
-              </form>
+              </>
             )}
           </div>
           <div className="glass-surface hover-lift" onMouseMove={handleGlowMove}>
@@ -501,60 +498,82 @@ function App() {
         </div>
 
         <div className="news-grid">
-          {filteredArticles.map((article) => {
-            const theme = themeForArticle(article.topic);
-
-            return (
-              <article
-                className={article.url ? "story-card clickable-card glass-surface hover-lift" : "story-card glass-surface hover-lift"}
-                key={article.id}
-                onMouseMove={handleGlowMove}
-                onClick={() => {
-                  if (article.url) window.open(article.url, "_blank", "noopener,noreferrer");
-                }}
-                role={article.url ? "link" : undefined}
-                tabIndex={article.url ? 0 : undefined}
-                onKeyDown={(event) => {
-                  if (article.url && (event.key === "Enter" || event.key === " ")) {
-                    event.preventDefault();
-                    window.open(article.url, "_blank", "noopener,noreferrer");
-                  }
-                }}
-                style={{
-                  "--item-accent": theme.accent,
-                  "--item-glow": theme.glow,
-                  "--item-ink": theme.ink,
-                }}
-              >
-                <img src={article.image} alt="" />
+          {loading ? (
+            Array.from({ length: 8 }).map((_, index) => (
+              <div className="story-card skeleton-card glass-surface" key={`skeleton-${index}`}>
+                <div className="skeleton-image skeleton-shimmer"></div>
                 <div className="story-body">
                   <div className="story-meta">
-                    <span>{article.topic}</span>
-                    <span>{article.minutes} min</span>
+                    <span className="skeleton-badge skeleton-shimmer"></span>
+                    <span className="skeleton-text skeleton-shimmer short"></span>
                   </div>
-                  <h3>{article.title}</h3>
-                  <p>{article.dek}</p>
+                  <h3 className="skeleton-title skeleton-shimmer"></h3>
+                  <h3 className="skeleton-title skeleton-shimmer medium"></h3>
+                  <p className="skeleton-text skeleton-shimmer"></p>
+                  <p className="skeleton-text skeleton-shimmer medium"></p>
                   <div className="story-footer">
-                    <span>{article.source}</span>
-                    <button
-                      className="hover-lift"
-                      onMouseMove={handleGlowMove}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        toggleSaved(article);
-                      }}
-                      aria-label={`Save ${article.title}`}
-                    >
-                      {saved.has(article.id) ? "Saved" : "Save"}
-                    </button>
+                    <span className="skeleton-text skeleton-shimmer short"></span>
+                    <span className="skeleton-btn skeleton-shimmer"></span>
                   </div>
                 </div>
-              </article>
-            );
-          })}
+              </div>
+            ))
+          ) : (
+            filteredArticles.map((article) => {
+              const theme = themeForArticle(article.topic);
+
+              return (
+                <article
+                  className={article.url ? "story-card clickable-card glass-surface hover-lift" : "story-card glass-surface hover-lift"}
+                  key={article.id}
+                  onMouseMove={handleGlowMove}
+                  onClick={() => {
+                    if (article.url) window.open(article.url, "_blank", "noopener,noreferrer");
+                  }}
+                  role={article.url ? "link" : undefined}
+                  tabIndex={article.url ? 0 : undefined}
+                  onKeyDown={(event) => {
+                    if (article.url && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault();
+                      window.open(article.url, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  style={{
+                    "--item-accent": theme.accent,
+                    "--item-glow": theme.glow,
+                    "--item-ink": theme.ink,
+                  }}
+                >
+                  <img src={article.image} alt="" />
+                  <div className="story-body">
+                    <div className="story-meta">
+                      <span>{article.topic}</span>
+                      <span>{article.minutes} min</span>
+                    </div>
+                    <h3>{article.title}</h3>
+                    <p>{article.dek}</p>
+                    <div className="story-footer">
+                      <span>{article.source}</span>
+                      <button
+                        className="hover-lift"
+                        onMouseMove={handleGlowMove}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleSaved(article);
+                        }}
+                        aria-label={`Save ${article.title}`}
+                      >
+                        {saved.has(article.id) ? "Saved" : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          )}
         </div>
 
-        {filteredArticles.length === 0 && (
+        {!loading && filteredArticles.length === 0 && (
           <div className="empty-state glass-surface">
             <h3>{showSavedOnly ? "No saved headlines" : "No matching headlines"}</h3>
             <p>{showSavedOnly ? "Save a story and it will appear here." : "Try a broader topic or clear the search field."}</p>
@@ -564,6 +583,56 @@ function App() {
           </div>
         )}
       </section>
+
+      {showAuthModal && (
+        <div className="modal-backdrop" onClick={() => setShowAuthModal(false)}>
+          <div className="modal-content glass-surface" onClick={(e) => e.stopPropagation()} onMouseMove={handleGlowMove}>
+            <button className="modal-close hover-lift" onClick={() => setShowAuthModal(false)} aria-label="Close authentication modal">
+              &times;
+            </button>
+            <h2 className="modal-title">Welcome to Headlyn</h2>
+            <p className="modal-subtitle">Save articles and sync your preferences</p>
+            <form onSubmit={handleAuthSubmit}>
+              <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
+                <button
+                  type="button"
+                  className={authMode === "login" ? "active" : ""}
+                  onClick={() => setAuthMode("login")}
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  className={authMode === "register" ? "active" : ""}
+                  onClick={() => setAuthMode("register")}
+                >
+                  Register
+                </button>
+              </div>
+              <input
+                value={authEmail}
+                onChange={(event) => setAuthEmail(event.target.value)}
+                placeholder="Email"
+                type="email"
+                autoComplete="email"
+                required
+              />
+              <input
+                value={authPassword}
+                onChange={(event) => setAuthPassword(event.target.value)}
+                placeholder="Password"
+                type="password"
+                autoComplete={authMode === "register" ? "new-password" : "current-password"}
+                required
+              />
+              <button type="submit" disabled={authBusy} className="hover-lift">
+                {authBusy ? "Working..." : authMode === "register" ? "Create account" : "Sign in"}
+              </button>
+              <p className="auth-message">{firebaseReady ? authMessage || "Sign in to sync saved stories." : "Add Firebase env vars to enable login."}</p>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
