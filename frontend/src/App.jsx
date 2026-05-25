@@ -535,6 +535,9 @@ function App() {
     });
   }, [activeTopic, articles, query, saved, savedArticles, showSavedOnly]);
 
+  const topArticles = useMemo(() => filteredArticles.slice(0, 4), [filteredArticles]);
+  const bottomArticles = useMemo(() => filteredArticles.slice(4), [filteredArticles]);
+
   const toggleSaved = async (article) => {
     const id = article.id;
     setSaved((current) => {
@@ -804,6 +807,151 @@ function App() {
     </>
   );
 
+  const renderStoryCard = (article) => {
+    if (!article) return null;
+    const articleTheme = themeForArticle(article.topic);
+    const isSaved = saved.has(article.id);
+    const isPersonalRecommendation = recommendationTopic === article.topic;
+    const hasAILensOpen = activeAILensId === article.id;
+    const aiData = getAILensData(article);
+
+    return (
+      <motion.article
+        className={article.url ? "story-card clickable-card glass-surface hover-lift" : "story-card glass-surface hover-lift"}
+        key={article.id}
+        onMouseMove={handleGlowMove}
+        onClick={() => {
+          trackRecentlyViewed(article);
+          if (article.url) window.open(article.url, "_blank", "noopener,noreferrer");
+        }}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.3 }}
+        style={{
+          "--item-accent": articleTheme.accent,
+          "--item-glow": articleTheme.glow,
+          "--item-ink": articleTheme.ink,
+        }}
+      >
+        <div className="card-image-wrap">
+          <img src={article.image} alt="" />
+          {isPersonalRecommendation && (
+            <div className="personal-match-badge">
+              <Sparkles size={11} /> AI Match
+            </div>
+          )}
+        </div>
+
+        <div className="story-body">
+          <div className="story-meta">
+            <span>{article.topic}</span>
+            <span>{article.minutes} min read</span>
+          </div>
+          <h3>{article.title}</h3>
+          <p>{article.dek}</p>
+          
+          <div className="story-footer">
+            <span>{article.source}</span>
+            <div className="card-action-btns">
+              <button
+                className={hasAILensOpen ? "ai-lens-trigger-btn active hover-lift" : "ai-lens-trigger-btn hover-lift"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setActiveAILensId(hasAILensOpen ? null : article.id);
+                }}
+                aria-label="Open AI tools"
+              >
+                <Sparkles size={13} />
+              </button>
+              <button
+                className="save-action-btn hover-lift"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleSaved(article);
+                }}
+                aria-label={`Save ${article.title}`}
+              >
+                {isSaved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Framer Motion Slide-Down AI Drawer Panel */}
+        <AnimatePresence>
+          {hasAILensOpen && (
+            <motion.div
+              className="card-ai-drawer"
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scaleY: 0.94, originY: 0 }}
+              animate={{ opacity: 1, scaleY: 1, originY: 0 }}
+              exit={{ opacity: 0, scaleY: 0.94, originY: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            >
+              <div className="ai-drawer-tabs">
+                <button
+                  className={aiLensTab === "summary" ? "ai-tab active" : "ai-tab"}
+                  onClick={() => setAiLensTab("summary")}
+                >
+                  <BookOpen size={12} /> Brief
+                </button>
+                <button
+                  className={aiLensTab === "elif5" ? "ai-tab active" : "ai-tab"}
+                  onClick={() => setAiLensTab("elif5")}
+                >
+                  <Info size={12} /> ELI5
+                </button>
+                <button
+                  className={aiLensTab === "bias" ? "ai-tab active" : "ai-tab"}
+                  onClick={() => setAiLensTab("bias")}
+                >
+                  <Gauge size={12} /> Analytical Lens
+                </button>
+              </div>
+
+              <div className="ai-drawer-pane">
+                {aiLensTab === "summary" && (
+                  <ul className="ai-summary-bullets">
+                    {aiData.summary.map((b, i) => (
+                      <li key={i}>{b}</li>
+                    ))}
+                  </ul>
+                )}
+                
+                {aiLensTab === "elif5" && (
+                  <p className="ai-elif5-text">{aiData.elif5}</p>
+                )}
+
+                {aiLensTab === "bias" && (
+                  <div className="ai-bias-dashboard">
+                    <div className="bias-dashboard-row">
+                      <span>Bias Rating:</span>
+                      <strong style={{ color: aiData.biasColor }}>{aiData.biasLabel}</strong>
+                    </div>
+                    <div className="bias-dashboard-row">
+                      <span>Credibility Level:</span>
+                      <strong style={{ color: aiData.credibilityColor }}>{aiData.credibilityLabel}</strong>
+                    </div>
+                    <div className="fact-meter-wrap">
+                      <div className="fact-meter-label">
+                        <span>Fact Check Rating:</span>
+                        <strong>{aiData.score}%</strong>
+                      </div>
+                      <div className="fact-meter-track">
+                        <div className="fact-meter-fill" style={{ width: `${aiData.score}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.article>
+    );
+  };
+
   return (
     <main
       className={`${compact ? "app compact" : "app"} ${theme === "light" ? "light-theme" : ""}`}
@@ -869,259 +1017,128 @@ function App() {
       {/* Main Premium Dashboard Container Split */}
       <div className="dashboard-container">
         
-        {/* Left Side: Dynamic Scrolling News Feed */}
-        <section className="feed-area">
+        {/* Top Split Block: Lead Story (Left) + Sidebar (Right) */}
+        <div className="dashboard-top-section">
           
-          {/* Lead Story Card with skeletons */}
-          {loading ? (
-            <article className="lead-story glass-surface skeleton-lead">
-              <div className="skeleton-lead-image skeleton-shimmer"></div>
-              <div className="lead-copy">
-                <div className="eyebrow">
-                  <span className="skeleton-text skeleton-shimmer short"></span>
-                  <span className="skeleton-text skeleton-shimmer short"></span>
-                </div>
-                <h1 className="skeleton-title skeleton-shimmer large"></h1>
-                <h1 className="skeleton-title skeleton-shimmer large medium"></h1>
-                <p className="skeleton-text skeleton-shimmer"></p>
-                <p className="skeleton-text skeleton-shimmer medium"></p>
-                <div className="lead-actions">
-                  <span className="skeleton-btn skeleton-shimmer large"></span>
-                  <span className="skeleton-btn skeleton-shimmer large"></span>
-                </div>
-              </div>
-            </article>
-          ) : (
-            <motion.article
-              className="lead-story glass-surface hover-lift"
-              onMouseMove={handleGlowMove}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <img src={lead.image} alt="" />
-              <div className="lead-copy">
-                <div className="eyebrow">
-                  <span>{status}</span>
-                  <span>{lead.source}</span>
-                </div>
-                <h1>{lead.title}</h1>
-                <p>{lead.dek}</p>
-                <div className="lead-actions">
-                  <button className="hover-lift" onMouseMove={handleGlowMove} onClick={() => toggleSaved(lead)}>
-                    {saved.has(lead.id) ? <BookmarkCheck size={14} className="btn-icon-inside" /> : <Bookmark size={14} className="btn-icon-inside" />}
-                    {saved.has(lead.id) ? "Saved" : "Save story"}
-                  </button>
-                  {lead.url ? (
-                    <a className="hover-lift" onMouseMove={handleGlowMove} href={lead.url} target="_blank" rel="noreferrer" onClick={() => trackRecentlyViewed(lead)}>
-                      <Compass size={14} className="btn-icon-inside" /> Open source
-                    </a>
-                  ) : (
-                    <span>{lead.minutes} min briefing</span>
-                  )}
-                </div>
-              </div>
-            </motion.article>
-          )}
-
-
-
-          {/* Content Heading Shell */}
-          <div className="section-heading">
-            <div>
-              <span>Edition</span>
-              <h2>{showSavedOnly ? "Saved Archives" : activeTopic}</h2>
-            </div>
-            <p>{query ? `Filtered by "${query}"` : "Sharp, line-clamped briefings."}</p>
-          </div>
-
-          {/* Multi-Column News Cards Grid */}
-          <div className="news-grid">
+          {/* Left Column: Hero Story + Top News Feed */}
+          <div className="dashboard-hero-feed">
             {loading ? (
-              Array.from({ length: 8 }).map((_, index) => (
-                <div className="story-card skeleton-card glass-surface" key={`skeleton-${index}`}>
-                  <div className="skeleton-image skeleton-shimmer"></div>
-                  <div className="story-body">
-                    <div className="story-meta">
-                      <span className="skeleton-badge skeleton-shimmer"></span>
-                      <span className="skeleton-text skeleton-shimmer short"></span>
-                    </div>
-                    <h3 className="skeleton-title skeleton-shimmer"></h3>
-                    <h3 className="skeleton-title skeleton-shimmer medium"></h3>
-                    <p className="skeleton-text skeleton-shimmer"></p>
-                    <p className="skeleton-text skeleton-shimmer medium"></p>
-                    <div className="story-footer">
-                      <span className="skeleton-text skeleton-shimmer short"></span>
-                      <span className="skeleton-btn skeleton-shimmer"></span>
-                    </div>
+              <article className="lead-story glass-surface skeleton-lead">
+                <div className="skeleton-lead-image skeleton-shimmer"></div>
+                <div className="lead-copy">
+                  <div className="eyebrow">
+                    <span className="skeleton-text skeleton-shimmer short"></span>
+                    <span className="skeleton-text skeleton-shimmer short"></span>
+                  </div>
+                  <h1 className="skeleton-title skeleton-shimmer large"></h1>
+                  <h1 className="skeleton-title skeleton-shimmer large medium"></h1>
+                  <p className="skeleton-text skeleton-shimmer"></p>
+                  <p className="skeleton-text skeleton-shimmer medium"></p>
+                  <div className="lead-actions">
+                    <span className="skeleton-btn skeleton-shimmer large"></span>
+                    <span className="skeleton-btn skeleton-shimmer large"></span>
                   </div>
                 </div>
-              ))
+              </article>
             ) : (
-              <AnimatePresence mode="popLayout">
-                {filteredArticles.map((article) => {
-                  const articleTheme = themeForArticle(article.topic);
-                  const isSaved = saved.has(article.id);
-                  const isPersonalRecommendation = recommendationTopic === article.topic;
-                  const hasAILensOpen = activeAILensId === article.id;
-                  const aiData = getAILensData(article);
-
-                  return (
-                    <motion.article
-                      className={article.url ? "story-card clickable-card glass-surface hover-lift" : "story-card glass-surface hover-lift"}
-                      key={article.id}
-                      onMouseMove={handleGlowMove}
-                      onClick={() => {
-                        trackRecentlyViewed(article);
-                        if (article.url) window.open(article.url, "_blank", "noopener,noreferrer");
-                      }}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.3 }}
-                      style={{
-                        "--item-accent": articleTheme.accent,
-                        "--item-glow": articleTheme.glow,
-                        "--item-ink": articleTheme.ink,
-                      }}
-                    >
-                      <div className="card-image-wrap">
-                        <img src={article.image} alt="" />
-                        {isPersonalRecommendation && (
-                          <div className="personal-match-badge">
-                            <Sparkles size={11} /> AI Match
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="story-body">
-                        <div className="story-meta">
-                          <span>{article.topic}</span>
-                          <span>{article.minutes} min read</span>
-                        </div>
-                        <h3>{article.title}</h3>
-                        <p>{article.dek}</p>
-                        
-                        <div className="story-footer">
-                          <span>{article.source}</span>
-                          <div className="card-action-btns">
-                            <button
-                              className={hasAILensOpen ? "ai-lens-trigger-btn active hover-lift" : "ai-lens-trigger-btn hover-lift"}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setActiveAILensId(hasAILensOpen ? null : article.id);
-                              }}
-                              aria-label="Open AI tools"
-                            >
-                              <Sparkles size={13} />
-                            </button>
-                            <button
-                              className="save-action-btn hover-lift"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                toggleSaved(article);
-                              }}
-                              aria-label={`Save ${article.title}`}
-                            >
-                              {isSaved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Framer Motion Slide-Down AI Drawer Panel */}
-                      <AnimatePresence>
-                        {hasAILensOpen && (
-                          <motion.div
-                            className="card-ai-drawer"
-                            onClick={(e) => e.stopPropagation()}
-                            initial={{ opacity: 0, scaleY: 0.94, originY: 0 }}
-                            animate={{ opacity: 1, scaleY: 1, originY: 0 }}
-                            exit={{ opacity: 0, scaleY: 0.94, originY: 0 }}
-                            transition={{ duration: 0.18, ease: "easeOut" }}
-                          >
-                            <div className="ai-drawer-tabs">
-                              <button
-                                className={aiLensTab === "summary" ? "ai-tab active" : "ai-tab"}
-                                onClick={() => setAiLensTab("summary")}
-                              >
-                                <BookOpen size={12} /> Brief
-                              </button>
-                              <button
-                                className={aiLensTab === "elif5" ? "ai-tab active" : "ai-tab"}
-                                onClick={() => setAiLensTab("elif5")}
-                              >
-                                <Info size={12} /> ELI5
-                              </button>
-                              <button
-                                className={aiLensTab === "bias" ? "ai-tab active" : "ai-tab"}
-                                onClick={() => setAiLensTab("bias")}
-                              >
-                                <Gauge size={12} /> Analytical Lens
-                              </button>
-                            </div>
-
-                            <div className="ai-drawer-pane">
-                              {aiLensTab === "summary" && (
-                                <ul className="ai-summary-bullets">
-                                  {aiData.summary.map((b, i) => (
-                                    <li key={i}>{b}</li>
-                                  ))}
-                                </ul>
-                              )}
-                              
-                              {aiLensTab === "elif5" && (
-                                <p className="ai-elif5-text">{aiData.elif5}</p>
-                              )}
-
-                              {aiLensTab === "bias" && (
-                                <div className="ai-bias-dashboard">
-                                  <div className="bias-dashboard-row">
-                                    <span>Bias Rating:</span>
-                                    <strong style={{ color: aiData.biasColor }}>{aiData.biasLabel}</strong>
-                                  </div>
-                                  <div className="bias-dashboard-row">
-                                    <span>Credibility Level:</span>
-                                    <strong style={{ color: aiData.credibilityColor }}>{aiData.credibilityLabel}</strong>
-                                  </div>
-                                  <div className="fact-meter-wrap">
-                                    <div className="fact-meter-label">
-                                      <span>Fact Check Rating:</span>
-                                      <strong>{aiData.score}%</strong>
-                                    </div>
-                                    <div className="fact-meter-track">
-                                      <div className="fact-meter-fill" style={{ width: `${aiData.score}%` }}></div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.article>
-                  );
-                })}
-              </AnimatePresence>
+              <motion.article
+                className="lead-story glass-surface hover-lift"
+                onMouseMove={handleGlowMove}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <img src={lead.image} alt="" />
+                <div className="lead-copy">
+                  <div className="eyebrow">
+                    <span>{status}</span>
+                    <span>{lead.source}</span>
+                  </div>
+                  <h1>{lead.title}</h1>
+                  <p>{lead.dek}</p>
+                  <div className="lead-actions">
+                    <button className="hover-lift" onMouseMove={handleGlowMove} onClick={() => toggleSaved(lead)}>
+                      {saved.has(lead.id) ? <BookmarkCheck size={14} className="btn-icon-inside" /> : <Bookmark size={14} className="btn-icon-inside" />}
+                      {saved.has(lead.id) ? "Saved" : "Save story"}
+                    </button>
+                    {lead.url ? (
+                      <a className="hover-lift" onMouseMove={handleGlowMove} href={lead.url} target="_blank" rel="noreferrer" onClick={() => trackRecentlyViewed(lead)}>
+                        <Compass size={14} className="btn-icon-inside" /> Open source
+                      </a>
+                    ) : (
+                      <span>{lead.minutes} min briefing</span>
+                    )}
+                  </div>
+                </div>
+              </motion.article>
             )}
+
+            {/* Top Cards News Grid */}
+            <div className="news-grid top-news-grid">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div className="story-card skeleton-card glass-surface" key={`skeleton-${index}`}>
+                    <div className="skeleton-image skeleton-shimmer"></div>
+                    <div className="story-body">
+                      <div className="story-meta">
+                        <span className="skeleton-badge skeleton-shimmer"></span>
+                        <span className="skeleton-text skeleton-shimmer short"></span>
+                      </div>
+                      <h3 className="skeleton-title skeleton-shimmer"></h3>
+                      <p className="skeleton-text skeleton-shimmer"></p>
+                      <div className="story-footer">
+                        <span className="skeleton-text skeleton-shimmer short"></span>
+                        <span className="skeleton-btn skeleton-shimmer"></span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {topArticles.map((article) => renderStoryCard(article))}
+                </AnimatePresence>
+              )}
+            </div>
           </div>
 
-          {/* Empty Search / Bookmarks State */}
-          {!loading && filteredArticles.length === 0 && (
-            <div className="empty-state glass-surface">
-              <h3>{showSavedOnly ? "No saved headlines" : "No matching headlines"}</h3>
-              <p>{showSavedOnly ? "Save a story and it will appear here." : "Try a broader topic or clear the search field."}</p>
-              <button className="hover-lift" onMouseMove={handleGlowMove} onClick={() => (showSavedOnly ? setShowSavedOnly(false) : setQuery(""))}>
-                {showSavedOnly ? "Back to feed" : "Clear search"}
-              </button>
-            </div>
-          )}
-        </section>
+          {/* Right Column: Desktop Sidebar Dashboard Hub */}
+          <aside className="dashboard-sidebar desktop-only">
+            {renderSidebarContent()}
+          </aside>
+        </div>
 
-        {/* Right Side: Desktop Sidebar Dashboard Widget Hub */}
-        <aside className="dashboard-sidebar desktop-only">
-          {renderSidebarContent()}
-        </aside>
+        {/* Bottom Full-Width Section: Spans across page once Sidebar ends */}
+        {!loading && bottomArticles.length > 0 && (
+          <div className="dashboard-full-width-section">
+            
+            {/* Content Heading Shell */}
+            <div className="section-heading">
+              <div>
+                <span>Edition</span>
+                <h2>{showSavedOnly ? "Saved Archives" : activeTopic}</h2>
+              </div>
+              <p>{query ? `Filtered by "${query}"` : "Sharp, line-clamped briefings."}</p>
+            </div>
+
+            {/* Bottom Multi-Column News Cards Grid */}
+            <div className="news-grid bottom-news-grid full-width-grid">
+              <AnimatePresence mode="popLayout">
+                {bottomArticles.map((article) => renderStoryCard(article))}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
+
+        {/* Empty Search / Bookmarks State */}
+        {!loading && filteredArticles.length === 0 && (
+          <div className="empty-state glass-surface" style={{ width: "100%" }}>
+            <h3>{showSavedOnly ? "No saved headlines" : "No matching headlines"}</h3>
+            <p>{showSavedOnly ? "Save a story and it will appear here." : "Try a broader topic or clear the search field."}</p>
+            <button className="hover-lift" onMouseMove={handleGlowMove} onClick={() => (showSavedOnly ? setShowSavedOnly(false) : setQuery(""))}>
+              {showSavedOnly ? "Back to feed" : "Clear search"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Slide-out Overlay Drawer Sidebar on Tablets & Mobile */}
