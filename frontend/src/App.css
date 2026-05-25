@@ -466,7 +466,7 @@ button {
   max-width: 1240px;
   margin: 0 auto;
   overflow-x: auto;
-  padding: 10px clamp(18px, 5vw, 42px) 24px;
+  padding: 32px clamp(18px, 5vw, 42px) 12px;
 }
 
 .topic-strip button {
@@ -1597,7 +1597,7 @@ button {
   gap: 28px;
   max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(32px, 5vw, 48px) clamp(18px, 5vw, 42px) 18px;
+  padding: clamp(12px, 2vw, 18px) clamp(18px, 5vw, 42px) 18px;
   align-items: start;
 }
 
