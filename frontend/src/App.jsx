@@ -994,24 +994,26 @@ function App() {
       </nav>
 
       {/* Core Horizontal Topic Strip Selector */}
-      <section className="topic-strip glass-surface" aria-label="Topics">
-        {topics.map((topic) => {
-          const topicTheme = categoryThemes[topic] || categoryThemes["Top Stories"];
-          return (
-            <button
-              key={topic}
-              className={topic === activeTopic && !showSavedOnly ? "active hover-lift" : "hover-lift"}
-              style={{ "--item-glow": topicTheme.glow, "--item-accent": topicTheme.accent }}
-              onMouseMove={handleGlowMove}
-              onClick={() => {
-                setShowSavedOnly(false);
-                setActiveTopic(topic);
-              }}
-            >
-              {topic}
-            </button>
-          );
-        })}
+      <section className={`topic-strip glass-surface ${scrolled ? "scrolled" : ""}`} aria-label="Topics">
+        <div className="topic-strip-inner">
+          {topics.map((topic) => {
+            const topicTheme = categoryThemes[topic] || categoryThemes["Top Stories"];
+            return (
+              <button
+                key={topic}
+                className={topic === activeTopic && !showSavedOnly ? "active hover-lift" : "hover-lift"}
+                style={{ "--item-glow": topicTheme.glow, "--item-accent": topicTheme.accent }}
+                onMouseMove={handleGlowMove}
+                onClick={() => {
+                  setShowSavedOnly(false);
+                  setActiveTopic(topic);
+                }}
+              >
+                {topic}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {/* Main Premium Dashboard Container Split */}
