@@ -94,8 +94,16 @@ function App() {
   // Advanced Interactive Sidebar states
   const [sidebarTab, setSidebarTab] = useState("bookmarks"); // "bookmarks" | "history"
   const [recentlyViewed, setRecentlyViewed] = useState(() => {
-    const cached = localStorage.getItem("headlyn_recent");
-    return cached ? JSON.parse(cached) : [];
+    try {
+      const cached = localStorage.getItem("headlyn_recent");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch (e) {
+      console.error("Failed to parse recently viewed history:", e);
+    }
+    return [];
   });
 
   // Geolocation weather widget states
@@ -218,9 +226,14 @@ function App() {
   // 4. Recently viewed tracker
   const trackRecentlyViewed = (article) => {
     setRecentlyViewed((prev) => {
-      const filtered = prev.filter((item) => item.id !== article.id);
+      const prevArray = Array.isArray(prev) ? prev : [];
+      const filtered = prevArray.filter((item) => item.id !== article.id);
       const next = [article, ...filtered].slice(0, 5);
-      localStorage.setItem("headlyn_recent", JSON.stringify(next));
+      try {
+        localStorage.setItem("headlyn_recent", JSON.stringify(next));
+      } catch (e) {
+        console.error("Failed to cache recently viewed history:", e);
+      }
       return next;
     });
   };
