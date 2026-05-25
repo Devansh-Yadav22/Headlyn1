@@ -31,6 +31,7 @@ import {
   BookOpen,
   LayoutGrid,
   Menu,
+  List,
 } from "lucide-react";
 import "./App.css";
 import { auth, db, firebaseReady, googleProvider } from "./firebase";
@@ -49,21 +50,46 @@ const categoryThemes = {
   Culture: { accent: "#c084fc", glow: "#a855f7", ink: "#f3e8ff", apiCategory: "entertainment", country: "us" },
 };
 
-const normalizeArticle = (article, index, topic = "Top Stories") => ({
-  id: article.id || article.url || `live-${index}`,
-  title: article.title || "Untitled story",
-  dek: article.description || article.content || "Open the source for the full report.",
-  source: article.source?.name || article.source || "Live Wire",
-  topic,
-  region: article.region || "World",
-  minutes: Math.max(2, Math.min(8, Math.round((article.description?.length || 240) / 80))),
-  trend: article.trend || "+5%",
-  image:
-    article.image ||
-    article.urlToImage ||
-    "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
-  url: article.url,
-});
+const normalizeArticle = (article, index, topic = "Top Stories") => {
+  if (!article) return {
+    id: `placeholder-${index}`,
+    title: "No title available",
+    dek: "No summary available.",
+    source: "Live Wire",
+    topic,
+    region: "World",
+    minutes: 3,
+    trend: "+0%",
+    image: "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+    url: "",
+  };
+
+  const rawSource = article.source;
+  let cleanSource = "Live Wire";
+  if (rawSource) {
+    if (typeof rawSource === "object") {
+      cleanSource = rawSource.name || "Live Wire";
+    } else {
+      cleanSource = String(rawSource);
+    }
+  }
+
+  return {
+    id: article.id || article.url || `live-${index}`,
+    title: article.title || "Untitled story",
+    dek: article.description || article.content || "Open the source for the full report.",
+    source: cleanSource,
+    topic,
+    region: article.region || "World",
+    minutes: Math.max(2, Math.min(8, Math.round((article.description?.length || 240) / 80))),
+    trend: article.trend || "+5%",
+    image:
+      article.image ||
+      article.urlToImage ||
+      "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+    url: article.url || "",
+  };
+};
 
 const savedDocId = (id) => id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 140);
 
@@ -282,16 +308,28 @@ function App() {
 
   // 7. Interactive AI Lens generator
   const getAILensData = (article) => {
+    if (!article || !article.title) {
+      return {
+        summary: ["No summary available."],
+        elif5: "No explanation available.",
+        biasLabel: "Neutral",
+        biasColor: "#10b981",
+        credibilityLabel: "High",
+        credibilityColor: "#10b981",
+        score: 85,
+      };
+    }
+
     const titleClean = article.title.replace(/\s*-\s*.*$/, "");
     const hash = article.title.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
     
     const summaryBullets = [
       `Core Event: Essential reporting centers around "${titleClean}" noting rapid global traction.`,
-      `Context Analysis: Wire streams from ${article.source} highlight that this marks a core shift in ${article.topic} parameters.`,
+      `Context Analysis: Wire streams from ${article.source || "Live Wire"} highlight that this marks a core shift in ${article.topic || "News"} parameters.`,
       `Projection Index: Financial and regional trackers project secondary impacts across surrounding sectors.`
     ];
 
-    const elif5Text = `Think of it like a playground game! A big block named "${titleClean.slice(0, 38)}..." just swapped places. ${article.source} wants us to see this because it changes how other players move around in ${article.topic}! It's like adding a fun new rule to tag that changes the whole score!`;
+    const elif5Text = `Think of it like a playground game! A big block named "${titleClean.slice(0, 38)}..." just swapped places. ${article.source || "Live Wire"} wants us to see this because it changes how other players move around in ${article.topic || "News"}! It's like adding a fun new rule to tag that changes the whole score!`;
 
     const biasOptions = [
       { label: "Neutral / Objective", color: "#10b981", type: "Center" },
@@ -340,32 +378,38 @@ function App() {
 
   useEffect(() => {
     if (!user || !db) return;
-    getDocs(collection(db, "users", user.uid, "savedArticles"))
-      .then((snapshot) => {
-        const savedIds = new Set();
-        const savedMap = new Map();
-        snapshot.docs.forEach((savedArticle) => {
-          const data = savedArticle.data();
-          savedIds.add(data.articleId);
-          savedMap.set(data.articleId, {
-            id: data.articleId,
-            title: data.title,
-            dek: data.dek || "Open the source for the full report.",
-            source: data.source,
-            topic: data.topic,
-            region: data.region || "World",
-            minutes: data.minutes || 3,
-            trend: "+0%",
-            url: data.url,
-            image:
-              data.image ||
-              "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+    try {
+      getDocs(collection(db, "users", user.uid, "savedArticles"))
+        .then((snapshot) => {
+          const savedIds = new Set();
+          const savedMap = new Map();
+          snapshot.docs.forEach((savedArticle) => {
+            const data = savedArticle.data();
+            if (data && data.articleId) {
+              savedIds.add(data.articleId);
+              savedMap.set(data.articleId, {
+                id: data.articleId,
+                title: data.title,
+                dek: data.dek || "Open the source for the full report.",
+                source: data.source,
+                topic: data.topic,
+                region: data.region || "World",
+                minutes: data.minutes || 3,
+                trend: "+0%",
+                url: data.url,
+                image:
+                  data.image ||
+                  "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80",
+              });
+            }
           });
-        });
-        setSaved(savedIds);
-        setSavedArticles(savedMap);
-      })
-      .catch(() => setAuthMessage("Sync error."));
+          setSaved(savedIds);
+          setSavedArticles(savedMap);
+        })
+        .catch(() => setAuthMessage("Sync error."));
+    } catch (e) {
+      console.error("Firestore initialization error caught: ", e);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -469,11 +513,12 @@ function App() {
 
   const filteredArticles = useMemo(() => {
     const search = query.trim().toLowerCase();
-    const baseArticles = showSavedOnly
-      ? Array.from(savedArticles.values()).filter((article) => saved.has(article.id))
-      : articles;
+    const baseArticles = (showSavedOnly
+      ? Array.from(savedArticles.values()).filter((article) => article && article.id && saved.has(article.id))
+      : articles).filter(Boolean);
 
     return baseArticles.filter((article) => {
+      if (!article) return false;
       const matchesTopic =
         showSavedOnly ||
         activeTopic === "Top Stories" ||
@@ -482,7 +527,7 @@ function App() {
         (activeTopic === "World" && article.region === "World");
       const matchesSearch =
         !search ||
-        [article.title, article.dek, article.source, article.topic, article.region]
+        [article.title || "", article.dek || "", article.source || "", article.topic || "", article.region || ""]
           .join(" ")
           .toLowerCase()
           .includes(search);
