@@ -240,10 +240,13 @@ function App() {
 
   // 5. Intelligent custom interest topic mapping
   const recommendationTopic = useMemo(() => {
-    if (recentlyViewed.length === 0) return null;
+    const safeViewed = Array.isArray(recentlyViewed) ? recentlyViewed : [];
+    if (safeViewed.length === 0) return null;
     const counts = {};
-    recentlyViewed.forEach((item) => {
-      counts[item.topic] = (counts[item.topic] || 0) + 1;
+    safeViewed.forEach((item) => {
+      if (item && item.topic) {
+        counts[item.topic] = (counts[item.topic] || 0) + 1;
+      }
     });
     let maxTopic = null;
     let maxCount = 0;
@@ -704,44 +707,50 @@ function App() {
         <div className="archive-tab-contents">
           {sidebarTab === "bookmarks" ? (
             <div className="archive-list">
-              {Array.from(savedArticles.values()).length === 0 ? (
+              {Array.from(savedArticles.values()).filter(Boolean).length === 0 ? (
                 <div className="archive-empty-state">
                   <p>Bookmarked stories appear here.</p>
                 </div>
               ) : (
-                Array.from(savedArticles.values()).map((art) => (
-                  <div
-                    className="archive-item hover-lift"
-                    key={art.id}
-                    onClick={() => {
-                      if (art.url) window.open(art.url, "_blank");
-                    }}
-                  >
-                    <span>{art.topic}</span>
-                    <h4>{art.title}</h4>
-                  </div>
-                ))
+                Array.from(savedArticles.values()).map((art) => {
+                  if (!art || !art.id) return null;
+                  return (
+                    <div
+                      className="archive-item hover-lift"
+                      key={art.id}
+                      onClick={() => {
+                        if (art.url) window.open(art.url, "_blank");
+                      }}
+                    >
+                      <span>{art.topic || "News"}</span>
+                      <h4>{art.title || "Untitled story"}</h4>
+                    </div>
+                  );
+                })
               )}
             </div>
           ) : (
             <div className="archive-list">
-              {recentlyViewed.length === 0 ? (
+              {recentlyViewed.filter(Boolean).length === 0 ? (
                 <div className="archive-empty-state">
                   <p>Opened articles will record here.</p>
                 </div>
               ) : (
-                recentlyViewed.map((art) => (
-                  <div
-                    className="archive-item hover-lift"
-                    key={art.id}
-                    onClick={() => {
-                      if (art.url) window.open(art.url, "_blank");
-                    }}
-                  >
-                    <span>{art.topic}</span>
-                    <h4>{art.title}</h4>
-                  </div>
-                ))
+                recentlyViewed.map((art) => {
+                  if (!art || !art.id) return null;
+                  return (
+                    <div
+                      className="archive-item hover-lift"
+                      key={art.id}
+                      onClick={() => {
+                        if (art.url) window.open(art.url, "_blank");
+                      }}
+                    >
+                      <span>{art.topic || "News"}</span>
+                      <h4>{art.title || "Untitled story"}</h4>
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
