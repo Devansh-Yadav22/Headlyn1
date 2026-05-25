@@ -963,38 +963,38 @@ function App() {
     >
       {/* Sleek Floating Header */}
       <nav className={`topbar glass-surface ${scrolled ? "scrolled" : ""}`} aria-label="Primary navigation" onMouseMove={handleGlowMove}>
-        <div className="topbar-left">
-          <button className="mobile-menu-btn hover-lift" onClick={() => setMobileSidebarOpen(true)} aria-label="Open sidebar panel">
-            <Menu size={18} />
-          </button>
-          <button className="brand hover-lift" onMouseMove={handleGlowMove} onClick={() => { setActiveTopic("Top Stories"); setShowSavedOnly(false); setQuery(""); }} aria-label="Go to top stories">
-            <span className="brand-mark">H</span>
-            <span>Headlyn</span>
-          </button>
+        <div className="topbar-main">
+          <div className="topbar-left">
+            <button className="mobile-menu-btn hover-lift" onClick={() => setMobileSidebarOpen(true)} aria-label="Open sidebar panel">
+              <Menu size={18} />
+            </button>
+            <button className="brand hover-lift" onMouseMove={handleGlowMove} onClick={() => { setActiveTopic("Top Stories"); setShowSavedOnly(false); setQuery(""); }} aria-label="Go to top stories">
+              <span className="brand-mark">H</span>
+              <span>Headlyn</span>
+            </button>
+          </div>
+
+          <div className="search-wrap hover-lift" onMouseMove={handleGlowMove}>
+            <span aria-hidden="true">Search</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Topics, sources, regions"
+              aria-label="Search news"
+            />
+          </div>
+
+          <div className="topbar-actions">
+            <button className="theme-toggle-btn hover-lift" onMouseMove={handleGlowMove} onClick={() => setTheme((theme) => (theme === "dark" ? "light" : "dark"))} aria-label="Toggle light and dark themes">
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <button className="icon-button hover-lift" onMouseMove={handleGlowMove} onClick={() => setCompact((value) => !value)} aria-label="Toggle compact layout">
+              {compact ? <LayoutGrid size={16} /> : <List size={16} />}
+            </button>
+          </div>
         </div>
 
-        <div className="search-wrap hover-lift" onMouseMove={handleGlowMove}>
-          <span aria-hidden="true">Search</span>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Topics, sources, regions"
-            aria-label="Search news"
-          />
-        </div>
-
-        <div className="topbar-actions">
-          <button className="theme-toggle-btn hover-lift" onMouseMove={handleGlowMove} onClick={() => setTheme((theme) => (theme === "dark" ? "light" : "dark"))} aria-label="Toggle light and dark themes">
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          <button className="icon-button hover-lift" onMouseMove={handleGlowMove} onClick={() => setCompact((value) => !value)} aria-label="Toggle compact layout">
-            {compact ? <LayoutGrid size={16} /> : <List size={16} />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Core Horizontal Topic Strip Selector */}
-      <section className={`topic-strip glass-surface ${scrolled ? "scrolled" : ""}`} aria-label="Topics">
+        {/* Core Horizontal Topic Strip Selector (Nested inside header topbar) */}
         <div className="topic-strip-inner">
           {topics.map((topic) => {
             const topicTheme = categoryThemes[topic] || categoryThemes["Top Stories"];
@@ -1014,7 +1014,7 @@ function App() {
             );
           })}
         </div>
-      </section>
+      </nav>
 
       {/* Main Premium Dashboard Container Split */}
       <div className="dashboard-container">
