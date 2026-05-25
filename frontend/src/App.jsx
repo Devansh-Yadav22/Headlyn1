@@ -928,7 +928,6 @@ function App() {
                         trackRecentlyViewed(article);
                         if (article.url) window.open(article.url, "_blank", "noopener,noreferrer");
                       }}
-                      layout="position"
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
@@ -989,10 +988,10 @@ function App() {
                           <motion.div
                             className="card-ai-drawer"
                             onClick={(e) => e.stopPropagation()}
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.25 }}
+                            initial={{ opacity: 0, scaleY: 0.94, originY: 0 }}
+                            animate={{ opacity: 1, scaleY: 1, originY: 0 }}
+                            exit={{ opacity: 0, scaleY: 0.94, originY: 0 }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
                           >
                             <div className="ai-drawer-tabs">
                               <button
