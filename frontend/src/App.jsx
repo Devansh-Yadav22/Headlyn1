@@ -994,7 +994,7 @@ function App() {
       </nav>
 
       {/* Core Horizontal Topic Strip Selector */}
-      <section className="topic-strip" aria-label="Topics">
+      <section className="topic-strip glass-surface" aria-label="Topics">
         {topics.map((topic) => {
           const topicTheme = categoryThemes[topic] || categoryThemes["Top Stories"];
           return (
