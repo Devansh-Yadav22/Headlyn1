@@ -1,6 +1,13 @@
 {
   "name": "news-app",
   "private": true,
+  "browserslist": [
+    "> 0.2%",
+    "last 2 versions",
+    "not dead",
+    "Safari >= 13",
+    "iOS >= 13"
+  ],
   "version": "0.0.0",
   "type": "module",
   "scripts": {
